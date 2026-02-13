@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -68,9 +70,44 @@ func main() {
 		panic("No choices in response")
 	}
 
-	if resp.Choices[0].Message.ToolCalls[0].Function.Name == "Read" {
+	toolMessage := resp.Choices[0].Message
+	toolCall := toolMessage.ToolCalls[0]
+
+	toolJson := toolCall.JSON
+	dec := json.NewDecoder(strings.NewReader(toolJson.Function.Raw()))
+
+	// open bracket
+	t, err := dec.Token()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	fmt.Printf("%T: %v\n", t, t)
+
+	type Message struct {
+		Name, text string
+	}
+
+	// inner values
+	for dec.More() {
+		var m Message
+		err := dec.Decode(&m)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		fmt.Printf("%v: %v\n", m.Name, m.text)
+	}
+
+	// close bracket
+	t, err = dec.Token()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	fmt.Printf("%T: %v\n", t, t)
+
+	if toolCall.Function.Name == "Read" {
 		fmt.Fprintln(os.Stderr, "Found read")
 	}
+
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
 
