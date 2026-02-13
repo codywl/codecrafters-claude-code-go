@@ -71,8 +71,9 @@ func main() {
 
 	toolMessage := resp.Choices[0].Message
 	if len(toolMessage.ToolCalls) < 1 {
-		fmt.Fprintln(os.Stderr, "Error: No tool calls available")
-		os.Exit(1)
+		fmt.Fprintln(os.Stderr, "No tool calls available")
+		fmt.Print("0")
+		os.Exit(0)
 	}
 
 	toolCall := toolMessage.ToolCalls[0]
