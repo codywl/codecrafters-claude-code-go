@@ -70,6 +70,11 @@ func main() {
 	}
 
 	toolMessage := resp.Choices[0].Message
+	if len(toolMessage.ToolCalls) < 1 {
+		fmt.Fprintln(os.Stderr, "Error: No tool calls available")
+		os.Exit(1)
+	}
+
 	toolCall := toolMessage.ToolCalls[0]
 
 	type ReadArgs struct {
