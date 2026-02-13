@@ -34,8 +34,7 @@ func main() {
 		openai.UserMessage(prompt),
 	}
 
-	done := 0
-	for done < 1 {
+	for {
 		client := openai.NewClient(option.WithAPIKey(apiKey), option.WithBaseURL(baseUrl))
 		resp, err := client.Chat.Completions.New(context.Background(),
 			openai.ChatCompletionNewParams{
@@ -97,16 +96,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			fmt.Print(string(content))
-
-			if toolCall.Function.Name == "Read" {
-				fmt.Fprintln(os.Stderr, "Found read")
-			}
-
-			// You can use print statements as follows for debugging, they'll be visible when running tests.
-			fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
-
-			fmt.Print(resp.Choices[0].Message.Content)
+			messages = append(messages, openai.ToolMessage(string(content), toolCall.ID))
 		}
 	}
 }
