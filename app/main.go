@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -73,36 +72,24 @@ func main() {
 	toolMessage := resp.Choices[0].Message
 	toolCall := toolMessage.ToolCalls[0]
 
-	toolJson := toolCall.JSON
-	dec := json.NewDecoder(strings.NewReader(toolJson.Function.Raw()))
+	type ReadArgs struct {
+		FilePath string `json:"file_path"`
+	}
 
-	// open bracket
-	t, err := dec.Token()
+	var args ReadArgs
+	err = json.Unmarshal([]byte(toolCall.Function.Arguments), &args)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	fmt.Printf("%T: %v\n", t, t)
-
-	type Message struct {
-		Name, text string
+		fmt.Fprintln(os.Stderr, "Error parsing json args")
+		os.Exit(1)
 	}
 
-	// inner values
-	for dec.More() {
-		var m Message
-		err := dec.Decode(&m)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-		fmt.Printf("%v: %v\n", m.Name, m.text)
-	}
-
-	// close bracket
-	t, err = dec.Token()
+	content, err := os.ReadFile(args.FilePath)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "Error reading file. %v\n", err)
+		os.Exit(1)
 	}
-	fmt.Printf("%T: %v\n", t, t)
+
+	fmt.Print(string(content))
 
 	if toolCall.Function.Name == "Read" {
 		fmt.Fprintln(os.Stderr, "Found read")
