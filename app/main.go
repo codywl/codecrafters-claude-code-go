@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -128,7 +129,8 @@ func main() {
 			var content []byte
 
 			if toolCall.Function.Name == "Bash" {
-				cmd := exec.Command("bash", "-c", args.Command)
+				parts := strings.Fields(args.Command)
+				cmd := exec.Command(parts[0], parts[1:]...)
 				output, err := cmd.CombinedOutput()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Command failed: %v\n", err)
