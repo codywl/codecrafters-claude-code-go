@@ -151,6 +151,10 @@ func main() {
 				}
 				slurp, _ = io.ReadAll(stdout)
 				content = slurp
+
+				if err := cmd.Wait(); err != nil {
+					log.Fatal(err)
+				}
 				return
 			}
 
