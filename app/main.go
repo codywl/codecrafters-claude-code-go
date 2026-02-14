@@ -132,19 +132,16 @@ func main() {
 			if toolCall.Function.Name == "Bash" {
 				cmd := exec.Command(args.Command)
 				stderr, err := cmd.StderrPipe()
+				stdout, stdouterr := cmd.StdoutPipe()
 				if err != nil {
 					fmt.Printf("Error reading stderr. %v\n", err)
 					slurp, _ := io.ReadAll(stderr)
 					fmt.Fprintf(os.Stderr, "%v\n", slurp)
 				}
-				if err := cmd.Start(); err != nil {
-					log.Fatal(err)
-				}
 				slurp, _ := io.ReadAll(stderr)
 				content = slurp
 
-				stdout, err := cmd.StdoutPipe()
-				if err != nil {
+				if stdouterr != nil {
 					fmt.Printf("Error reading stdout. %v\n", err)
 					slurp, _ := io.ReadAll(stdout)
 					fmt.Fprintf(os.Stderr, "%v\n", slurp)
