@@ -119,7 +119,7 @@ func main() {
 			}
 
 			if toolCall.Function.Name == "Write" {
-				os.WriteFile(os.TempDir(), []byte(args.FilePath), 0644)
+				os.WriteFile(args.FilePath, []byte(args.FilePath), 0644)
 				content, err := os.ReadFile(args.FilePath)
 				if err != nil {
 					fmt.Printf("Error reading file. %v\n", err)
