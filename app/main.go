@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -74,6 +76,20 @@ func main() {
 							"required": []string{"file_path", "content"},
 						},
 					}),
+					openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+						Name:        "Bash",
+						Description: openai.String("Execute a shell command"),
+						Parameters: openai.FunctionParameters{
+							"type":     "object",
+							"required": []string{"command"},
+							"properties": map[string]any{
+								"command": map[string]any{
+									"type":        "string",
+									"description": "The command to execute",
+								},
+							},
+						},
+					}),
 				},
 			},
 		)
@@ -100,6 +116,7 @@ func main() {
 			type ReadArgs struct {
 				FilePath string `json:"file_path"`
 				Content  string `json:"content"`
+				Command  string `json:"command"`
 			}
 
 			var args ReadArgs
@@ -109,24 +126,48 @@ func main() {
 				os.Exit(1)
 			}
 
+			var content []byte
+
+			if toolCall.Function.Name == "Bash" {
+				cmd := exec.Command(args.Command)
+				stderr, err := cmd.StderrPipe()
+				if err != nil {
+					fmt.Printf("Error reading stderr. %v\n", err)
+					slurp, _ := io.ReadAll(stderr)
+					fmt.Fprintf(os.Stderr, "%v\n", slurp)
+				}
+				slurp, _ := io.ReadAll(stderr)
+				content = slurp
+
+				stdout, err := cmd.StdoutPipe()
+				if err != nil {
+					fmt.Printf("Error reading stdout. %v\n", err)
+					slurp, _ := io.ReadAll(stdout)
+					fmt.Fprintf(os.Stderr, "%v\n", slurp)
+				}
+				slurp, _ = io.ReadAll(stdout)
+				content = slurp
+				return
+			}
+
 			if toolCall.Function.Name == "Read" {
-				content, err := os.ReadFile(args.FilePath)
+				content, err = os.ReadFile(args.FilePath)
 				if err != nil {
 					fmt.Printf("Error reading file. %v\n", err)
 					os.Exit(1)
 				}
-				messages = append(messages, openai.ToolMessage(string(content), toolCall.ID))
 			}
 
 			if toolCall.Function.Name == "Write" {
 				os.WriteFile(args.FilePath, []byte(args.Content), 0644)
-				content, err := os.ReadFile(args.FilePath)
+				content, err = os.ReadFile(args.FilePath)
 				if err != nil {
 					fmt.Printf("Error reading file. %v\n", err)
 					os.Exit(1)
 				}
-				messages = append(messages, openai.ToolMessage(string(content), toolCall.ID))
 			}
+
+			messages = append(messages, openai.ToolMessage(string(content), toolCall.ID))
 
 		}
 
