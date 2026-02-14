@@ -128,7 +128,7 @@ func main() {
 			var content []byte
 
 			if toolCall.Function.Name == "Bash" {
-				cmd := exec.Command(args.Command)
+				cmd := exec.Command("bash", "-c", args.Command)
 				output, err := cmd.CombinedOutput()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Command failed: %v\n", err)
