@@ -9,6 +9,7 @@ import (
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 func main() {
@@ -55,6 +56,24 @@ func main() {
 							"required": []string{"file_path"},
 						},
 					}),
+					openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+						Name:        "Write",
+						Description: openai.String("Write content to a file"),
+						Parameters: openai.FunctionParameters{
+							"type": "object",
+							"properties": map[string]any{
+								"file_path": map[string]any{
+									"type":        "string",
+									"description": "The path to the file to write",
+								},
+								"content": map[string]any{
+									"type":        "string",
+									"description": "The content to write to the file",
+								},
+							},
+							"required": []string{"file_path", "content"},
+						},
+					}),
 				},
 			},
 		)
@@ -78,9 +97,9 @@ func main() {
 		}
 
 		for _, toolCall := range toolMessage.ToolCalls {
-
 			type ReadArgs struct {
 				FilePath string `json:"file_path"`
+				Content  string `json:"content"`
 			}
 
 			var args ReadArgs
@@ -90,13 +109,26 @@ func main() {
 				os.Exit(1)
 			}
 
-			content, err := os.ReadFile(args.FilePath)
-			if err != nil {
-				fmt.Errorf("Error reading file. %v\n", err)
-				os.Exit(1)
+			if toolCall.Function.Name == "Read" {
+				content, err := os.ReadFile(args.FilePath)
+				if err != nil {
+					fmt.Printf("Error reading file. %v\n", err)
+					os.Exit(1)
+				}
+				messages = append(messages, openai.ToolMessage(string(content), toolCall.ID))
 			}
 
-			messages = append(messages, openai.ToolMessage(string(content), toolCall.ID))
+			if toolCall.Function.Name == "Write" {
+				os.WriteFile(os.TempDir(), []byte(args.FilePath), 0644)
+				content, err := os.ReadFile(args.FilePath)
+				if err != nil {
+					fmt.Printf("Error reading file. %v\n", err)
+					os.Exit(1)
+				}
+				messages = append(messages, openai.ToolMessage(string(content), toolCall.ID))
+			}
+
 		}
+
 	}
 }
