@@ -131,31 +131,12 @@ func main() {
 
 			if toolCall.Function.Name == "Bash" {
 				cmd := exec.Command(args.Command)
-				stderr, err := cmd.StderrPipe()
-				stdout, stdouterr := cmd.StdoutPipe()
+				output, err := cmd.CombinedOutput()
 				if err != nil {
-					fmt.Printf("Error reading stderr. %v\n", err)
-					slurp, _ := io.ReadAll(stderr)
-					fmt.Fprintf(os.Stderr, "%v\n", slurp)
+					fmt.Fprintf(os.Stderr, "Command failed: %v\n", err)
+					os.Exit(1)
 				}
-				slurp, _ := io.ReadAll(stderr)
-				content = slurp
-
-				if stdouterr != nil {
-					fmt.Printf("Error reading stdout. %v\n", err)
-					slurp, _ := io.ReadAll(stdout)
-					fmt.Fprintf(os.Stderr, "%v\n", slurp)
-				}
-				if err := cmd.Start(); err != nil {
-					log.Fatal(err)
-				}
-				slurp, _ = io.ReadAll(stdout)
-				content = slurp
-
-				if err := cmd.Wait(); err != nil {
-					log.Fatal(err)
-				}
-				return
+				content = output
 			}
 
 			if toolCall.Function.Name == "Read" {
