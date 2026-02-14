@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 
@@ -136,6 +137,9 @@ func main() {
 					slurp, _ := io.ReadAll(stderr)
 					fmt.Fprintf(os.Stderr, "%v\n", slurp)
 				}
+				if err := cmd.Start(); err != nil {
+					log.Fatal(err)
+				}
 				slurp, _ := io.ReadAll(stderr)
 				content = slurp
 
@@ -144,6 +148,9 @@ func main() {
 					fmt.Printf("Error reading stdout. %v\n", err)
 					slurp, _ := io.ReadAll(stdout)
 					fmt.Fprintf(os.Stderr, "%v\n", slurp)
+				}
+				if err := cmd.Start(); err != nil {
+					log.Fatal(err)
 				}
 				slurp, _ = io.ReadAll(stdout)
 				content = slurp
